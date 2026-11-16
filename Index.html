@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy Birthday AI Card! 🎂</title>
+
+  <!-- External Libraries (QR Code & Confetti) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-accent: #1e1b4b;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --gold: #f59e0b;
+      --cream: #fffbeb;
+      --text-dark: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, var(--bg-accent), var(--bg-dark));
+      font-family: 'Fredoka', sans-serif;
+      color: var(--text-dark);
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    /* Floating Background Balloons */
+    .balloons {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .balloon {
+      position: absolute;
+      bottom: -80px;
+      font-size: 2.2rem;
+      opacity: 0.6;
+      animation: rise 12s linear infinite;
+    }
+
+    .balloon:nth-child(1) { left: 10%; animation-duration: 11s; animation-delay: 0s; }
+    .balloon:nth-child(2) { left: 30%; animation-duration: 14s; animation-delay: 2s; }
+    .balloon:nth-child(3) { left: 65%; animation-duration: 10s; animation-delay: 4s; }
+    .balloon:nth-child(4) { left: 85%; animation-duration: 13s; animation-delay: 1s; }
+
+    @keyframes rise {
+      0% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+      100% { transform: translateY(-115vh) rotate(15deg); opacity: 0; }
+    }
+
+    /* 3D Card Scene */
+    .scene {
+      width: 350px;
+      max-width: 92vw;
+      height: 520px;
+      perspective: 1600px;
+      cursor: pointer;
+      z-index: 1;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.9s cubic-bezier(0.4, 0.2, 0.2, 1);
+    }
+
+    .card.is-open {
+      transform: rotateY(-180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 24px;
+      border: 6px solid #94a3b8;
+      box-shadow: 0 25px 55px rgba(0, 0, 0, 0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    /* Metallic Corner Rivets */
+    .rivet {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #64748b;
+      border: 2px solid #cbd5e1;
+      border-radius: 50%;
+    }
+    .rivet.tl { top: 10px; left: 10px; }
+    .rivet.tr { top: 10px; right: 10px; }
+    .rivet.bl { bottom: 10px; left: 10px; }
+    .rivet.br { bottom: 10px; right: 10px; }
+
+    /* Front Cover */
+    .card-front {
+      background: linear-gradient(145deg, #f8fafc 0%, #e0e7ff 100%);
+    }
+
+    .badge {
+      background: var(--primary);
+      color: #ffffff;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      letter-spacing: 0.6px;
+      box-shadow: 0 4px 10px rgba(99, 102, 241, 0.35);
+    }
+
+    .card-front h1 {
+      font-size: 2rem;
+      color: var(--text-dark);
+      line-height: 1.1;
+      margin-top: 6px;
+    }
+
+    .robot-illustration {
+      width: 165px;
+      height: 165px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .flame {
+      animation: flicker 0.4s infinite alternate;
+      transform-origin: center;
+    }
+
+    @keyframes flicker {
+      from { transform: scale(1); opacity: 0.9; }
+      to { transform: scale(1.15); opacity: 1; }
+    }
+
+    .tap-hint {
+      font-size: 0.95rem;
+      color: #334155;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 9px 18px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Inside Card */
+    .card-inside {
+      background: var(--cream);
+      transform: rotateY(180deg);
+      justify-content: center;
+      gap: 14px;
+      font-family: 'Patrick Hand', cursive;
+      cursor: default;
+    }
+
+    .greeting-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 2rem;
+      color: #b45309;
+    }
+
+    .inline-name-input {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.85rem;
+      color: #78350f;
+      background: #ffffff;
+      border: 2px dashed var(--gold);
+      border-radius: 10px;
+      padding: 2px 10px;
+      width: 175px;
+      text-align: center;
+      outline: none;
+    }
+
+    .inline-name-input:focus {
+      border-style: solid;
+      border-color: var(--primary);
+    }
+
+    .dua-box {
+      background: #fef3c7;
+      border: 2px dashed var(--gold);
+      border-radius: 18px;
+      padding: 16px 14px;
+      font-size: 1.4rem;
+      line-height: 1.38;
+      color: #78350f;
+      word-break: break-word;
+    }
+
+    .ameen {
+      display: block;
+      margin-top: 6px;
+      font-weight: bold;
+      color: #047857;
+      font-size: 1.55rem;
+    }
+
+    .extra-wish {
+      font-size: 1.18rem;
+      color: #78350f;
+      min-height: 36px;
+      padding: 0 6px;
+    }
+
+    /* Action Buttons */
+    .controls {
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      z-index: 1;
+      max-width: 520px;
+    }
+
+    button {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 12px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+    }
+
+    button.secondary { background: #0ea5e9; }
+    button.secondary:hover { background: #0284c7; }
+
+    button.music-btn { background: #10b981; }
+    button.music-btn:hover { background: #059669; }
+
+    /* QR Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 22px;
+      text-align: center;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content h3 {
+      margin-bottom: 6px;
+      font-size: 1.3rem;
+    }
+
+    .modal-content p {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      margin-bottom: 10px;
+    }
+
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 10px auto 16px;
+      padding: 12px;
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      width: fit-content;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Balloons -->
+  <div class="balloons">
+    <div class="balloon">🎈</div>
+    <div class="balloon">🎉</div>
+    <div class="balloon">🎈</div>
+    <div class="balloon">✨</div>
+  </div>
+
+  <!-- 3D Folding Card -->
+  <div class="scene" onclick="toggleCard()">
+    <div class="card" id="birthdayCard">
+
+      <!-- Front Face -->
+      <div class="card-face card-front">
+        <span class="rivet tl"></span><span class="rivet tr"></span>
+        <span class="rivet bl"></span><span class="rivet br"></span>
+
+        <span class="badge">✨ SCAN FOR AI MAGIC ✨</span>
+        <h1>HAPPY BIRTHDAY!</h1>
+
+        <!-- Cute AI Robot Holding Birthday Cake -->
+        <svg class="robot-illustration" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <line x1="100" y1="15" x2="100" y2="35" stroke="#475569" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="100" cy="12" r="7" fill="#f59e0b"/>
+          <rect x="38" y="55" width="12" height="26" rx="6" fill="#6366f1"/>
+          <rect x="150" y="55" width="12" height="26" rx="6" fill="#6366f1"/>
+          <rect x="50" y="35" width="100" height="68" rx="18" fill="#cbd5e1" stroke="#475569" stroke-width="4"/>
+          <rect x="60" y="45" width="80" height="46" rx="12" fill="#0f172a"/>
+          <path d="M 73 66 Q 80 56 87 66" stroke="#38bdf8" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M 113 66 Q 120 56 127 66" stroke="#38bdf8" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M 92 77 Q 100 84 108 77" stroke="#38bdf8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <rect x="62" y="108" width="76" height="55" rx="14" fill="#94a3b8" stroke="#475569" stroke-width="4"/>
+          <path d="M 62 122 Q 40 135 65 148" stroke="#475569" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <path d="M 138 122 Q 160 135 135 148" stroke="#475569" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <rect x="68" y="138" width="64" height="28" rx="6" fill="#f472b6" stroke="#be185d" stroke-width="3"/>
+          <path d="M 68 146 Q 78 153 89 146 Q 100 153 111 146 Q 122 153 132 146" stroke="#ffffff" stroke-width="4" fill="none"/>
+          <rect x="85" y="124" width="5" height="14" fill="#38bdf8"/>
+          <rect x="98" y="124" width="5" height="14" fill="#facc15"/>
+          <rect x="111" y="124" width="5" height="14" fill="#4ade80"/>
+          <circle class="flame" cx="87.5" cy="119" r="3.5" fill="#f97316"/>
+          <circle class="flame" cx="100.5" cy="119" r="3.5" fill="#f97316"/>
+          <circle class="flame" cx="113.5" cy="119" r="3.5" fill="#f97316"/>
+        </svg>
+
+        <p style="color:#334155; font-size:0.98rem;">
+          A special birthday dua for<br>
+          <strong id="frontRecipientName">You</strong>
+        </p>
+        <div class="tap-hint">👆 Tap card to open</div>
+      </div>
+
+      <!-- Inside Face (click stops card from closing while typing) -->
+      <div class="card-face card-inside" onclick="event.stopPropagation()">
+        <span class="rivet tl"></span><span class="rivet tr"></span>
+        <span class="rivet bl"></span><span class="rivet br"></span>
+
+        <div class="greeting-row">
+          <span>Dear</span>
+          <input
+            type="text"
+            id="cardNameInput"
+            class="inline-name-input"
+            placeholder="Your name..."
+            oninput="handleNameInput(this.value)"
+          />
+          <span>,</span>
+        </div>
+
+        <div class="dua-box">
+          “May Allah always keep you happy and always keep smiling”
+          <span class="ameen">Ameen 🤲✨</span>
+        </div>
+
+        <p class="extra-wish" id="aiWishText">
+          Wishing you a year filled with endless barakah, joy, and bright moments! 🎉
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Interactive Buttons -->
+  <div class="controls">
+    <button onclick="toggleCard()">📖 Open / Close</button>
+    <button class="secondary" onclick="generateNewWish()">✨ New AI Wish</button>
+    <button class="music-btn" onclick="playBirthdayMelody()">🎵 Play Tune</button>
+    <button onclick="openQRModal()">📱 Get QR Code</button>
+  </div>
+
+  <!-- QR Code Generator Modal -->
+  <div class="modal" id="qrModal" onclick="handleBackdropClick(event)">
+    <div class="modal-content">
+      <h3>📱 Scannable Card QR</h3>
+      <p>Your entered name is automatically included in the link:</p>
+      <input
+        type="text"
+        id="cardUrlInput"
+        class="form-input"
+        placeholder="https://your-username.github.io/birthday-card/"
+        oninput="generateQR()"
+      />
+      <div id="qrcode"></div>
+      <div class="modal-actions">
+        <button onclick="downloadQR()">⬇️ Save PNG</button>
+        <button class="secondary" onclick="copyShareLink()">📋 Copy Link</button>
+        <button style="background:#64748b;" onclick="closeQRModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const card = document.getElementById('birthdayCard');
+    const cardNameInput = document.getElementById('cardNameInput');
+    const frontRecipientName = document.getElementById('frontRecipientName');
+    const urlInput = document.getElementById('cardUrlInput');
+    const qrContainer = document.getElementById('qrcode');
+    const wishText = document.getElementById('aiWishText');
+
+    let enteredName = "";
+
+    const extraWishes = [
+      "Wishing you a year filled with endless barakah, joy, and bright moments! 🎉",
+      "May every step you take this year bring peace, health, and success. Ameen! 🌟",
+      "May your smile shine even brighter in the year ahead. Happy Birthday! 🎂",
+      "Sending warm prayers for a lifetime of happiness and wonderful memories! ✨"
+    ];
+    let wishIndex = 0;
+
+    function loadNameFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('name') && params.get('name').trim() !== '') {
+        enteredName = params.get('name').trim();
+        cardNameInput.value = enteredName;
+        frontRecipientName.textContent = enteredName;
+        document.title = `Happy Birthday ${enteredName}! 🎂`;
+      }
+    }
+
+    function handleNameInput(value) {
+      enteredName = value.trim();
+      frontRecipientName.textContent = enteredName || "You";
+      document.title = enteredName ? `Happy Birthday ${enteredName}! 🎂` : "Happy Birthday AI Card! 🎂";
+
+      try {
+        const shareUrl = buildShareableURL();
+        window.history.replaceState({}, '', shareUrl);
+      } catch (e) {
+        // Ignore when opened via file://
+      }
+    }
+
+    function buildShareableURL(baseUrlOverride) {
+      const base = baseUrlOverride || (window.location.origin + window.location.pathname);
+      const url = new URL(base.startsWith('http') ? base : window.location.href);
+      if (enteredName) {
+        url.searchParams.set('name', enteredName);
+      } else {
+        url.searchParams.delete('name');
+      }
+      return url.toString();
+    }
+
+    function toggleCard() {
+      card.classList.toggle('is-open');
+      if (card.classList.contains('is-open') && typeof confetti === 'function') {
+        confetti({ particleCount: 95, spread: 75, origin: { y: 0.6 } });
+      }
+    }
+
+    function generateNewWish() {
+      if (!card.classList.contains('is-open')) {
+        toggleCard();
+      }
+      wishIndex = (wishIndex + 1) % extraWishes.length;
+      wishText.textContent = extraWishes[wishIndex];
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } });
+      }
+    }
+
+    function playBirthdayMelody() {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+
+      const notes = [
+        [261.63, 0.25], [261.63, 0.25], [293.66, 0.5], [261.63, 0.5], [349.23, 0.5], [329.63, 0.9],
+        [261.63, 0.25], [261.63, 0.25], [293.66, 0.5], [261.63, 0.5], [392.00, 0.5], [349.23, 0.9]
+      ];
+
+      let time = ctx.currentTime + 0.05;
+      notes.forEach(([freq, dur]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0.18, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + dur);
+        time += dur + 0.05;
+      });
+    }
+
+    function openQRModal() {
+      document.getElementById('qrModal').classList.add('active');
+      urlInput.value = buildShareableURL();
+      generateQR();
+    }
+
+    function closeQRModal() {
+      document.getElementById('qrModal').classList.remove('active');
+    }
+
+    function handleBackdropClick(e) {
+      if (e.target.id === 'qrModal') closeQRModal();
+    }
+
+    function generateQR() {
+      qrContainer.innerHTML = "";
+      const targetUrl = urlInput.value.trim() || buildShareableURL();
+      new QRCode(qrContainer, {
+        text: targetUrl,
+        width: 200,
+        height: 200,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    function downloadQR() {
+      const canvas = qrContainer.querySelector('canvas');
+      if (!canvas) return;
+      const filePrefix = enteredName ? enteredName.replace(/[^a-z0-9]/gi, '_') : 'Birthday_Card';
+      const link = document.createElement('a');
+      link.download = `${filePrefix}_QR.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function copyShareLink() {
+      navigator.clipboard.writeText(urlInput.value).then(() => {
+        alert("Shareable card link copied to clipboard!");
+      });
+    }
+
+    loadNameFromURL();
+  </script>
+</body>
+</html>
